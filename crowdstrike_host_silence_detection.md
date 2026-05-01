@@ -60,8 +60,6 @@ index=main sourcetype=crowdstrike* earliest=-24h
 // HostType = "Server" covers Windows, Linux, and macOS servers cross-platform
 #event_simpleName = /^(AgentConnect|SensorHeartbeat|AgentOnline)$/
 | HostType = "Server"
-// Exclude dev/test/non-prod servers by naming convention — adjust patterns to your environment
-| not regex("(?i)(dev|test|uat|qa|lab|sandbox)", field=ComputerName)
 | groupBy([aid, ComputerName, LocalAddressIP4, HostType], function=[
     max(@timestamp, as=last_seen),
     count(as=total_events)
@@ -80,9 +78,7 @@ index=main sourcetype=crowdstrike* earliest=-24h
 
 | Tuning | Mechanism | Adjust If... |
 |---|---|---|
-| Dev/Test exclusion | `not regex(...)` on `ComputerName` | Your naming convention differs — update the regex pattern |
 | Decommissioned host exclusion | `silence_hours <= 48` upper bound | You want a wider window before assuming decommissioned |
-| Non-prod naming patterns | `"(?i)(dev\|test\|uat\|qa\|lab\|sandbox)"` | Add terms like `staging`, `dr`, `temp` as needed |
 
 ---
 
