@@ -58,20 +58,12 @@ index=main sourcetype=crowdstrike* earliest=-24h
 // Uses connectivity/heartbeat events only — not security events — to avoid false positives
 // on quiet-but-online servers that simply aren't generating security telemetry
 // Covers: Windows Servers (ProductType=3), Domain Controllers (ProductType=2), and Linux hosts
-union(
-  {
-    #event_simpleName = /^(AgentConnect|SensorHeartbeat|AgentOnline)$/
-    | event_platform = "Lin"
-  },
-  {
-    #event_simpleName = /^(AgentConnect|SensorHeartbeat|AgentOnline)$/
-    | in(field=aid, query={
-        #event_simpleName = OsVersionInfo
-        | ProductType = /^(2|3)$/
-        | groupBy(aid)
-      })
-  }
-)
+#event_simpleName = /^(AgentConnect|SensorHeartbeat|AgentOnline)$/
+| in(field=aid, query={
+    #event_simpleName = /^(AgentConnect|SensorHeartbeat|AgentOnline|OsVersionInfo)$/
+    | ProductType = /^(2|3)$/ OR event_platform = "Lin"
+    | groupBy(aid)
+  })
 | groupBy([aid, ComputerName, LocalAddressIP4], function=[
     max(@timestamp, as=last_seen),
     count(as=total_events)
@@ -83,7 +75,7 @@ union(
 | silence_hours >= 2
 | silence_hours <= 48
 | sort(silence_hours, order=desc)
-| select([ComputerName aid LocalAddressIP4 last_seen silence_hours total_events])
+| select([ComputerName, aid, LocalAddressIP4, last_seen, silence_hours, total_events])
 ```
 
 **Tuning Notes:**
