@@ -58,17 +58,20 @@ index=main sourcetype=crowdstrike* earliest=-24h
 // Uses connectivity/heartbeat events only — not security events — to avoid false positives
 // on quiet-but-online servers that simply aren't generating security telemetry
 // Covers: Windows Servers (ProductType=3), Domain Controllers (ProductType=2), and Linux hosts
-#event_simpleName = /^(AgentConnect|SensorHeartbeat|AgentOnline)$/
-| case {
-    event_platform = "Lin" | * ;
-    aid in(query={
+union(
+  {
+    #event_simpleName = /^(AgentConnect|SensorHeartbeat|AgentOnline)$/
+    | event_platform = "Lin"
+  },
+  {
+    #event_simpleName = /^(AgentConnect|SensorHeartbeat|AgentOnline)$/
+    | aid in(query={
         #event_simpleName = OsVersionInfo
         | ProductType = /^(2|3)$/
         | groupBy(aid)
-      }, field=aid) | * ;
+      }, field=aid)
   }
-// Exclude dev/test/non-prod servers by naming convention — adjust patterns to your environment
-| not regex("(?i)(dev|test|uat|qa|lab|sandbox)", field=ComputerName)
+)
 | groupBy([aid, ComputerName, LocalAddressIP4], function=[
     max(@timestamp, as=last_seen),
     count(as=total_events)
@@ -89,9 +92,7 @@ index=main sourcetype=crowdstrike* earliest=-24h
 |---|---|---|
 | Server identification (Windows) | `OsVersionInfo` subquery on `ProductType` 2 or 3 | ProductType values differ in your environment |
 | Server identification (Linux) | `event_platform = "Lin"` | You want to exclude or add other platforms |
-| Dev/Test exclusion | `not regex(...)` on `ComputerName` | Your naming convention differs — update the regex pattern |
 | Decommissioned host exclusion | `silence_hours <= 48` upper bound | You want a wider window before assuming decommissioned |
-| Non-prod naming patterns | `"(?i)(dev\|test\|uat\|qa\|lab\|sandbox)"` | Add terms like `staging`, `dr`, `temp` as needed |
 
 ---
 
