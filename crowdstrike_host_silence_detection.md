@@ -65,11 +65,11 @@ union(
   },
   {
     #event_simpleName = /^(AgentConnect|SensorHeartbeat|AgentOnline)$/
-    | aid in(query={
+    | in(field=aid, query={
         #event_simpleName = OsVersionInfo
         | ProductType = /^(2|3)$/
         | groupBy(aid)
-      }, field=aid)
+      })
   }
 )
 | groupBy([aid, ComputerName, LocalAddressIP4], function=[
