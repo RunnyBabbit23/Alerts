@@ -54,20 +54,16 @@ index=main sourcetype=crowdstrike* earliest=-24h
 ## Falcon Next-Gen SIEM (LogScale Query Language)
 
 ```logscale
-// Find servers whose sensor has stopped communicating for more than 2 hours
-// Uses connectivity/heartbeat events only — not security events — to avoid false positives
-// on quiet-but-online servers that simply aren't generating security telemetry
 // Covers: Windows Servers (ProductType=3), Domain Controllers (ProductType=2), and Linux hosts
-#event_simpleName = /^(AgentConnect|SensorHeartbeat|AgentOnline)$/
-| in(field=aid, query={
-    #event_simpleName = /^(AgentConnect|SensorHeartbeat|AgentOnline|OsVersionInfo)$/
-    | ProductType = /^(2|3)$/ OR event_platform = "Lin"
-    | groupBy(aid)
-  })
+// OsVersionInfo is included to carry ProductType — groupBy collapses all event types per AID
+#event_simpleName = /^(AgentConnect|SensorHeartbeat|AgentOnline|OsVersionInfo)$/
 | groupBy([aid, ComputerName, LocalAddressIP4], function=[
     max(@timestamp, as=last_seen),
+    max(ProductType, as=ProductType),
+    last(event_platform, as=event_platform),
     count(as=total_events)
   ])
+| ProductType = /^(2|3)$/ OR event_platform = "Lin"
 | silence_ms := now() - last_seen
 | silence_hours := silence_ms / 3600000
 // Lower bound: 2 hours = newly went silent
