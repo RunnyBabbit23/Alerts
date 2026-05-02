@@ -60,7 +60,7 @@ index=main sourcetype=crowdstrike* earliest=-24h
 | groupBy([aid, ComputerName, LocalAddressIP4], function=[
     max(@timestamp, as=last_seen),
     max(ProductType, as=ProductType),
-    last(event_platform, as=event_platform),
+    max(event_platform, as=event_platform),
     count(as=total_events)
   ])
 | ProductType = /^(2|3)$/ OR event_platform = "Lin"
